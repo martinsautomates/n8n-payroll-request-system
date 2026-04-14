@@ -1,0 +1,2045 @@
+{
+  "name": "Automated Employee Payroll Employee Request System",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Hurayra Teq Consulting Limited Direct Deposit Authorization Form",
+        "formDescription": "At Hurayra Teq Consulting Limited we require our employees to set up automatic deposit into \ntheir checking and/or savings accounts.  It is possible to have multiple accounts \nset up at one time.  To set up or change direct deposit information please completely fill out necessary details on this form",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Employee Full Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Employee ID #",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Department"
+            },
+            {
+              "fieldLabel": "Financial Institution"
+            },
+            {
+              "fieldLabel": "Account Number",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Routing Number",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Employee Email",
+              "fieldType": "email"
+            }
+          ]
+        },
+        "options": {
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Your request has been received and being reviewed"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -704,
+        0
+      ],
+      "id": "4658a226-1736-4b88-adcb-73d57ad3004d",
+      "name": "On form submission",
+      "webhookId": "c5442897-b58f-416e-aa00-aa05f3a77f8d"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_EMPLOYEE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "All employees Information",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_EMPLOYEE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_EMPLOYEE_SHEET_ID/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Employee ID #",
+              "lookupValue": "={{ $('On form submission').item.json['Employee ID #'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -256,
+        0
+      ],
+      "id": "aaf709ca-001e-4f8a-a042-778f0d5c7259",
+      "name": "Validate Info",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4f51a9ce-73b6-40ac-b6ea-1b9403a13d50",
+              "leftValue": "={{ $json[\"Employee ID #\"] === undefined }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -32,
+        0
+      ],
+      "id": "e1782fbe-a801-4e92-ae20-264fb38922aa",
+      "name": "Valid?"
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_HR_EMAIL@gmail.com",
+        "subject": "=Approval Required - Payroll Change - ID:{{ $('CREATE REQUEST').item.json['Employee ID #'] }}",
+        "emailType": "text",
+        "message": "=Hello HR,\n\nA payroll update request has been submitted:\n\nName: {{ $('On form submission').item.json['Employee Full Name'] }}\nID: {{ $('On form submission').item.json['Employee ID #'] }}\n\nApprove:\nhttps://YOUR_N8N_INSTANCE_URL/webhook/approval?action=approve&reqId={{ $json['Request ID'] }}\n\nReject:\nhttps://YOUR_N8N_INSTANCE_URL/webhook/approval?action=reject&reqId={{ $json['Request ID'] }}\n\nThank you",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1088,
+        192
+      ],
+      "id": "ce7210a3-5eb4-41cb-ab63-63aa46ef077b",
+      "name": "Approval request",
+      "webhookId": "31b6df97-9c41-4ccc-8fc0-e38479e14e46",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json['Employee Email'] }}",
+        "subject": "Action Required - Invalid Information (Payroll direct deposit change)",
+        "emailType": "text",
+        "message": "=Hello {{ $('On form submission').item.json['Employee Full Name'] }}, \n\nWe couldn't process your request at this time.\nPlease verify your details and try again.\nThank you",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        -96
+      ],
+      "id": "02299692-269d-48c7-8f80-4899ef09ae5c",
+      "name": "Reconfirm information",
+      "webhookId": "6b714a02-8826-44bd-b00c-4d9b195f6e11",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "209a37c7-6b43-49f1-affb-9cd6cc2cdcf7",
+              "name": "Request ID",
+              "value": "={{ 'REQ-' + Date.now() }}",
+              "type": "string"
+            },
+            {
+              "id": "186116f5-3d5b-47bc-a7a0-4b3fbad59f5e",
+              "name": "Submitted At",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "9dbc6e2d-eacb-4654-87f4-89c322befb95",
+              "name": "Status",
+              "value": "Pending",
+              "type": "string"
+            },
+            {
+              "id": "02a20373-45ad-4c9c-96e5-359dfbfe6705",
+              "name": "Bank",
+              "value": "={{ $json['Financial Institution'] }}",
+              "type": "string"
+            },
+            {
+              "id": "3b86b0a5-fa21-4c2d-90db-5dd60fcd480d",
+              "name": "Employee Name",
+              "value": "={{ $json['Employee Full Name'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        0
+      ],
+      "id": "87334850-cb4c-4171-ac02-6c2eb95bfb9c",
+      "name": "GENERATE REQUEST DATA"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_REQUEST_TRACKING_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "REQUEST TRACKING SHEET",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Request ID": "={{ $('GENERATE REQUEST DATA').item.json['Request ID'] }}",
+            "Employee ID #": "={{ $('On form submission').item.json['Employee ID #'] }}",
+            "Employee Name ": "={{ $('On form submission').item.json['Employee Full Name'] }}",
+            "Email": "={{ $('On form submission').item.json['Employee Email'] }}",
+            "Department": "={{ $('On form submission').item.json.Department }}",
+            "Bank": "={{ $('On form submission').item.json['Financial Institution'] }}",
+            "Account number": "={{ $('On form submission').item.json['Account Number'] }}",
+            "Routing Number": "={{ $('On form submission').item.json['Routing Number'] }}",
+            "Status": "Pending",
+            "Submitted At": "={{ $('On form submission').item.json.submittedAt }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Request ID",
+              "displayName": "Request ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Employee ID #",
+              "displayName": "Employee ID #",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Employee Name ",
+              "displayName": "Employee Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Department",
+              "displayName": "Department",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bank",
+              "displayName": "Bank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Account number",
+              "displayName": "Account number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Routing Number",
+              "displayName": "Routing Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Submitted At",
+              "displayName": "Submitted At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Decision Date",
+              "displayName": "Decision Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reviewed By",
+              "displayName": "Reviewed By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        640,
+        192
+      ],
+      "id": "2ec9ee78-a748-4577-b8bb-be0845543e25",
+      "name": "CREATE REQUEST",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw",
+          "mode": "list",
+          "cachedResultName": "AUDIT LOG SHEET",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Log ID": "={{ 'LOG-' + Date.now() }}",
+            "Request ID": "={{ $json['Request ID'] }}",
+            "Action": "Request Created",
+            "Performed By": "={{ $('On form submission').item.json['Employee Email'] }}",
+            "Notes": "Direct deposit change submitted",
+            "Timestamp": "={{ $now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Log ID",
+              "displayName": "Log ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Request ID",
+              "displayName": "Request ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Performed By",
+              "displayName": "Performed By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        864,
+        192
+      ],
+      "id": "9284c763-dfd2-4c92-8344-3a61f630887b",
+      "name": "LOG REQUEST CREATED",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "approval",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -704,
+        512
+      ],
+      "id": "822374eb-0acb-46b0-ac1b-fb718113fd67",
+      "name": "Webhook",
+      "webhookId": "9f171c4b-f6ba-43e5-a816-34413677e047"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "892ecc7b-b7a3-4caa-af11-a392d509c320",
+              "name": "request ID",
+              "value": "={{ $json.query.reqId }}",
+              "type": "string"
+            },
+            {
+              "id": "ce875dc4-0403-4468-be62-f85800b173ee",
+              "name": "Action",
+              "value": "={{ $json.query.action }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        512
+      ],
+      "id": "e7622436-9d92-4b71-ad54-304fd555352e",
+      "name": "Extract parameters"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b53e4642-5d70-4e32-b113-c981f7e8b8a0",
+              "leftValue": "={{ $('Extract parameters').item.json.Action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        496
+      ],
+      "id": "dcd818aa-a44e-4abc-a435-75cf899ba746",
+      "name": "Is Approved?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1c420985-7b9f-4662-8c85-04b7afdc4cea",
+              "leftValue": "={{ $items(\"Check Existing Request\")[0].json[\"Status\"] === \"Pending\" }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        96
+      ],
+      "id": "89cc4c1f-48f2-4da0-a2e0-32e1734f5192",
+      "name": "If",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_REQUEST_TRACKING_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "REQUEST TRACKING SHEET",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Employee ID #",
+              "lookupValue": "={{ $('On form submission').item.json['Employee ID #'] }}"
+            },
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        192,
+        96
+      ],
+      "id": "2b2e52ac-d85d-44d7-ba0c-d476a3be26cf",
+      "name": "Check Existing Request",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Validate Info').item.json.Email }}",
+        "subject": "Pending Request Available",
+        "message": "=Hello {{ $('Validate Info').item.json['Employee Full Name'] }},\n\nYou already have a pending request. Please wait for approval.\n\nRegards",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        0
+      ],
+      "id": "8e09fc9c-4f5d-4170-94a6-68de9816e8ec",
+      "name": "Pending request email",
+      "webhookId": "c3b0abf4-c6c9-49b0-a048-afde7e4fbee1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_REQUEST_TRACKING_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "REQUEST TRACKING SHEET",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Request ID": "={{ $('Get request').item.json['Request ID'] }}",
+            "Status": "Approved",
+            "Decision Date": "={{ new Date().toISOString() }}",
+            "Reviewed By": "=HR"
+          },
+          "matchingColumns": [
+            "Request ID"
+          ],
+          "schema": [
+            {
+              "id": "Request ID",
+              "displayName": "Request ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Employee ID #",
+              "displayName": "Employee ID #",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Employee Name ",
+              "displayName": "Employee Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Department",
+              "displayName": "Department",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bank",
+              "displayName": "Bank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Account number",
+              "displayName": "Account number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Routing Number",
+              "displayName": "Routing Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Submitted At",
+              "displayName": "Submitted At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Decision Date",
+              "displayName": "Decision Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reviewed By",
+              "displayName": "Reviewed By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        432,
+        416
+      ],
+      "id": "f01aff83-7d05-46a6-bedf-988f24277fd6",
+      "name": "Update approved",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_EMPLOYEE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "All employees Information",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_EMPLOYEE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_EMPLOYEE_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Employee ID #": "={{ $('Get request').item.json['Employee ID #'] }}",
+            "Bank": "={{ $('Get request').item.json.Bank }}",
+            "Account Number": "={{ $('Get request').item.json['Account number'] }}",
+            "Routing Number": "={{ $('Get request').item.json['Routing Number'] }}",
+            "Status": "=Approved",
+            "Last Updated": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "Employee ID #"
+          ],
+          "schema": [
+            {
+              "id": "Employee ID #",
+              "displayName": "Employee ID #",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Employee Full Name",
+              "displayName": "Employee Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Department",
+              "displayName": "Department",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job title",
+              "displayName": "Job title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bank",
+              "displayName": "Bank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Account Number",
+              "displayName": "Account Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Routing Number",
+              "displayName": "Routing Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Updated",
+              "displayName": "Last Updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        864,
+        416
+      ],
+      "id": "a748d6ef-7d6d-45c2-80ca-1e7b91ea5af8",
+      "name": "Update Employee Record",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_REQUEST_TRACKING_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "REQUEST TRACKING SHEET",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Request ID": "={{ $('Get request').item.json['Request ID'] }}",
+            "Status": "Rejected",
+            "Reviewed By": "HR",
+            "Decision Date": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "Request ID"
+          ],
+          "schema": [
+            {
+              "id": "Request ID",
+              "displayName": "Request ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Employee ID #",
+              "displayName": "Employee ID #",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Employee Name ",
+              "displayName": "Employee Name ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Department",
+              "displayName": "Department",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bank",
+              "displayName": "Bank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Account number",
+              "displayName": "Account number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Routing Number",
+              "displayName": "Routing Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Submitted At",
+              "displayName": "Submitted At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Decision Date",
+              "displayName": "Decision Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reviewed By",
+              "displayName": "Reviewed By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        432,
+        608
+      ],
+      "id": "f7b51df8-26ac-42e3-b4d6-a04755b5f38e",
+      "name": "Rejected Update",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Validate Info').item.json.Email }}",
+        "subject": "Direct Deposit Change Request Received",
+        "message": "=Hello {{ $('Validate Info').item.json['Employee Full Name'] }},  \n\nYour request to update your direct deposit details has been successfully received and is currently under review. \n\nReference ID: {{ $('LOG REQUEST CREATED').item.json['Request ID'] }}\n\nOur HR team has been notified, and your request is being processed for approval. You’ll be informed as soon as a decision has been made.  \nIf any additional details are needed, we’ll reach out to you directly.  \n\nThanks for your patience.  \n\nBest regards, \nHR Team Hurayra Teq Consulting Limited",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1328,
+        192
+      ],
+      "id": "b1d2134e-ae83-4f38-8830-62f2bc787ea7",
+      "name": "Request submitted email",
+      "webhookId": "1ddae798-7f54-4bc0-bdaa-d08591b3e155",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get request').item.json.Email }}",
+        "subject": "Direct depost Information Change Approval",
+        "emailType": "text",
+        "message": "=Hello {{ $('Get request').item.json['Employee Name '] }},\n\nYour request to update your direct deposit details has been approved and successfully processed.\nReference ID: {{ $('Get request').item.json['Request ID'] }}\n\nThe changes will take effect in the upcoming payroll cycle.\n\nIf you have any questions or need further assistance, feel free to reach out.\n\nBest regards,\nHR Team\nHurayra Teq Consulting Limited",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1088,
+        416
+      ],
+      "id": "3c94787f-9835-4a2b-8f4a-15f2f222f6f9",
+      "name": "Approval Email",
+      "webhookId": "477f571f-70ce-4316-8d9d-9331482e5dbf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get request').item.json.Email }}",
+        "subject": "Direct Deposit Change Request Update",
+        "message": "=Hello {{ $('Get request').item.json['Employee Name '] }},\nYour request to update your direct deposit details has been reviewed, but it was not approved at this time.  \nReference ID: {{ $('Get request').item.json['Request ID'] }}\n\nThis may be due to missing or incorrect information. Kindly review your submission and resubmit your request with the correct details.  \n\nIf you need any clarification, feel free to reach out.  \n\nBest regards, \nHR Team Hurayra Teq Consulting Limited",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        608
+      ],
+      "id": "dcadc7d4-c248-4278-b703-26e77e4162a2",
+      "name": "Rejection Email",
+      "webhookId": "cf4072c5-2008-4ef4-8381-56b870eb08ff",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_REQUEST_TRACKING_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "REQUEST TRACKING SHEET",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_REQUEST_TRACKING_SHEET_ID/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Request ID",
+              "lookupValue": "={{ $json[\"request ID\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -256,
+        512
+      ],
+      "id": "87eaad40-22ff-499f-8d04-de2dab4f3ff9",
+      "name": "Get request",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1d705489-fd51-4fdb-9fe6-b2ddb10cd43a",
+              "leftValue": "={{ $('Get request').item.json.Status }}",
+              "rightValue": "Pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -48,
+        512
+      ],
+      "id": "1ca2a983-e0d9-4bcb-8431-1642326554a3",
+      "name": "Is Still Pending?"
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_HR_EMAIL@gmail.com",
+        "subject": "Request Already Processed",
+        "message": "=This request has already been reviewed.  Request ID: {{ $('Get request').item.json['Request ID'] }}  \n\nCurrent Status: {{ $('Get request').item.json.Status }} \n\nNo further action is required.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        816
+      ],
+      "id": "9195dcd5-d296-4d7e-96d1-7cdbd555d9ec",
+      "name": "Already Processed",
+      "webhookId": "90780fab-f529-4bc3-bbe7-7df84e35657c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw",
+          "mode": "list",
+          "cachedResultName": "AUDIT LOG SHEET",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Log ID": "={{ 'LOG-' + Date.now() }}",
+            "Request ID": "={{ $json['Request ID'] }}",
+            "Action": "Approved",
+            "Performed By": "HR",
+            "Notes": "Payroll change approved",
+            "Timestamp": "={{ $now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Log ID",
+              "displayName": "Log ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Request ID",
+              "displayName": "Request ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Performed By",
+              "displayName": "Performed By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        640,
+        416
+      ],
+      "id": "24709242-c58b-485b-8c7a-9e7911f5d31c",
+      "name": "Log Approved request",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw",
+          "mode": "list",
+          "cachedResultName": "AUDIT LOG SHEET",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Log ID": "={{ 'LOG-' + Date.now() }}",
+            "Request ID": "={{ $json['Request ID'] }}",
+            "Action": "Rejected",
+            "Performed By": "HR",
+            "Timestamp": "={{ $now }}",
+            "Notes": "Payroll change rejected"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Log ID",
+              "displayName": "Log ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Request ID",
+              "displayName": "Request ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Performed By",
+              "displayName": "Performed By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        640,
+        608
+      ],
+      "id": "843daed9-54b1-4405-93de-d23a90645c3a",
+      "name": "Log Rejected",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw",
+          "mode": "list",
+          "cachedResultName": "AUDIT LOG SHEET",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SjjPU7ZrKAA3tqRrWGPvVWbxvRiceOkyrSDWXPR9Yrw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Log ID": "={{ 'LOG-' + Date.now() }}",
+            "Request ID": "={{ $json['Request ID'] }}",
+            "Action": "Blocked Action",
+            "Performed By": "HR",
+            "Timestamp": "={{ $now }}",
+            "Notes": "Duplicate or already processed request"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Log ID",
+              "displayName": "Log ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Request ID",
+              "displayName": "Request ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Performed By",
+              "displayName": "Performed By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        80,
+        816
+      ],
+      "id": "96473659-3067-4c1b-9e72-cb30cd506621",
+      "name": "Log blocked actions",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "✅ Request Approved\n\nThe payroll update has been successfully approved.\n\nYou can now close this page.",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1296,
+        416
+      ],
+      "id": "7c7e34fc-aa5f-492a-91ac-bd7b46767cef",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "❌ Request Rejected\n\nThe payroll update request has been reviewed and rejected.\n\nYou can close this page.",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1072,
+        608
+      ],
+      "id": "e57acfe6-91d6-43f2-9ea4-34c2b08afb4b",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "⚠️ Request Already Processed\n\nThis request has already been reviewed.\n\nNo further action is required.",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        528,
+        816
+      ],
+      "id": "f7360485-bcb9-4764-9927-e38d07ef9491",
+      "name": "Respond to Webhook2"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "YOUR_N8N_INSTANCE_URL",
+            "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "accept-encoding": "gzip, br",
+            "accept-language": "en-US,en;q=0.9",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "102.88.55.248",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "NG",
+            "cf-ray": "9e912f6c7b783052-LHR",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "cookie": "_ga_0SC4FF2FH9=GS2.1.s1773585426$o1$g1$t1773585455$j31$l0$h0; _fbp=fb.1.1773585435526.183593964780694747; rl_session=RudderEncrypt%3AU2FsdGVkX1%2FSb6esmnxCTp6xzZyz59LXcjFxKjbxlWjc7PFM5ijAmapL%2BI76B7zJiLwMmqRbkYhhdHFoid1u6ur3D9tec5rJLwUj3AXs%2FzxnWzoBSzctO09JtjOFjrt2hjVewGL2kg1XdunhIK8gng%3D%3D; rl_trait=RudderEncrypt%3AU2FsdGVkX1%2BGHIs1e26y2iObo26dzECH6JogXDhDQAARAET6uYthaKYOkQIMwnGLv5h%2FDKf550sOvcbIPBIq5jWS65x3Ce4SGppVOvP8qtE158zDf%2Bom%2BDXIqtn1fhNhGqEomPO8cCTwLGukMg7hImaVSf5%2BZA5maOKfgzyFBtg%3D; rl_user_id=RudderEncrypt%3AU2FsdGVkX1871rWLdfX1IhkNrlrak2SZSmM7qK4lsR4%3D",
+            "priority": "u=0, i",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "none",
+            "x-forwarded-for": "102.88.55.248, 162.158.216.79",
+            "x-forwarded-host": "YOUR_N8N_INSTANCE_URL",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-84-7f76b9856b-f4j44",
+            "x-is-trusted": "yes",
+            "x-real-ip": "102.88.55.248"
+          },
+          "params": {},
+          "query": {
+            "action": "approve",
+            "reqId": "REQ-1775649866603"
+          },
+          "body": {},
+          "webhookUrl": "https://YOUR_N8N_INSTANCE_URL/webhook-test/approval",
+          "executionMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "GENERATE REQUEST DATA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Info": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Reconfirm information",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Existing Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GENERATE REQUEST DATA": {
+      "main": [
+        [
+          {
+            "node": "Validate Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CREATE REQUEST": {
+      "main": [
+        [
+          {
+            "node": "LOG REQUEST CREATED",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LOG REQUEST CREATED": {
+      "main": [
+        [
+          {
+            "node": "Approval request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract parameters": {
+      "main": [
+        [
+          {
+            "node": "Get request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Pending request email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CREATE REQUEST",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Approved?": {
+      "main": [
+        [
+          {
+            "node": "Update approved",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rejected Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval request": {
+      "main": [
+        [
+          {
+            "node": "Request submitted email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update approved": {
+      "main": [
+        [
+          {
+            "node": "Log Approved request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Employee Record": {
+      "main": [
+        [
+          {
+            "node": "Approval Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rejected Update": {
+      "main": [
+        [
+          {
+            "node": "Log Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get request": {
+      "main": [
+        [
+          {
+            "node": "Is Still Pending?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Still Pending?": {
+      "main": [
+        [
+          {
+            "node": "Is Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log blocked actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Approved request": {
+      "main": [
+        [
+          {
+            "node": "Update Employee Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Rejected": {
+      "main": [
+        [
+          {
+            "node": "Rejection Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log blocked actions": {
+      "main": [
+        [
+          {
+            "node": "Already Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Email": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rejection Email": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already Processed": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "xXkEfiju4HnYd1J8",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "f4cca838-0025-4b0e-9817-4f1ce6901fd1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f9ede116650ca466bc5c9f4d23ec7837140b986aad2aa9420b61e781027fcc7"
+  },
+  "id": "q4jNlWTaBhM55U3H",
+  "tags": []
+}
