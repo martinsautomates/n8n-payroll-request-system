@@ -83,4 +83,4 @@ everything from submission to approval — with zero manual steps for HR.
 
 ---
 
-*Built by [Martin](https://github.com/martinsautomates) as part of an n8n automation portfolio*
+*Built by [Martins](https://github.com/martinsautomates) as part of an n8n automation portfolio*
